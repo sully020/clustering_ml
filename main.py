@@ -3,6 +3,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.decomposition import PCA, FastICA
 from sklearn.neural_network import MLPClassifier
 from sklearn.random_projection import GaussianRandomProjection
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import silhouette_score
 import pandas as pd
 import warnings
@@ -17,25 +18,28 @@ def create_dataframes():
 
 
 def init_cluster_data():
-    print("Clustering\n-------------------------")
+    print("\nClustering\n-------------------------")
     emails, diabetes = create_dataframes()
     print("K-Means Clustering -\nE-Mails:")
     kclusters(emails)
     print("Diabetes: ")
     kclusters(diabetes)
     print("Expectation Maximization -\nE-Mails:")
-    init_soft_clusters(emails)
+    soft_cluster(emails)
     print("Diabetes: ")
-    init_soft_clusters(diabetes)
+    soft_cluster(diabetes)
 
 def kclusters(dataset):
-    n = input('How many clusters would you like? ')
+    n = input('How many K-Means clusters would you like? ')
     kmeans = KMeans(n_clusters = int(n))
     kmeans.fit(dataset)
     silhouette = silhouette_score(dataset, kmeans.labels_)
     print("The silhouette score of the " + str(n) + " clusters was: " +"{:.3f}".format(silhouette) + '\n')
 
-def init_soft_clusters(dataset):
+    clustered_set = kmeans.transform(dataset)
+    return clustered_set
+
+def soft_cluster(dataset):
     n = input('How many EM clusters would you like? ')
     exp_max = GaussianMixture(n_components = int(n))
     exp_max.fit(dataset)
@@ -43,6 +47,9 @@ def init_soft_clusters(dataset):
     log_likely = exp_max.score(dataset)
     print("The aic score of the " + str(n) + " EM clusters was: " + "{:.3f}".format(aic))
     print("The log-likelihood value of the " + str(n) + " EM clusters was: " + "{:.3f}".format(log_likely) + '\n')
+
+    clustered_set = exp_max.predict_proba(dataset)
+    return clustered_set
 
 
 def reduce_dimensions():
@@ -66,12 +73,14 @@ def email_pca(emails):
     n = input('How many PCA components would you like? ')
     pca = PCA(n_components = int(n), svd_solver = 'randomized')
     new_set = pca.fit_transform(emails)
+    print("Descending Variance Array: " + str(pca.explained_variance_))
     return new_set
 
 def diabetes_pca(diabetes):
     n = input('How many PCA components would you like? ')
     pca = PCA(n_components = int(n))
     new_set = pca.fit_transform(diabetes)
+    print("Descending Variance Array: " + str(pca.explained_variance_))
     return new_set                                                                              
 
 def ica_reduction(dataset):
@@ -115,10 +124,10 @@ def exp_max_pca():
     emails, diabetes = create_dataframes()
     print("E-Mails: ")
     emails = email_pca(emails)
-    init_soft_clusters(emails)
+    soft_cluster(emails)
     print("Diabetes: ")
     diabetes = diabetes_pca(diabetes)
-    init_soft_clusters(diabetes)
+    soft_cluster(diabetes)
 
 def kcluster_ica():
     emails, diabetes = create_dataframes()
@@ -133,10 +142,10 @@ def exp_max_ica():
     emails, diabetes = create_dataframes()
     print("E-Mails: ")
     emails = ica_reduction(emails)
-    init_soft_clusters(emails)
+    soft_cluster(emails)
     print("Diabetes: ")
     diabetes = ica_reduction(diabetes)
-    init_soft_clusters(diabetes)
+    soft_cluster(diabetes)
 
 def kcluster_rproj():
     emails, diabetes = create_dataframes()
@@ -151,34 +160,79 @@ def exp_max_rproj():
     emails, diabetes = create_dataframes()
     print("E-Mails: ")
     emails = random_proj(emails)
-    init_soft_clusters(emails)
+    soft_cluster(emails)
     print("Diabetes: ")
     diabetes = random_proj(diabetes)
-    init_soft_clusters(diabetes)
+    soft_cluster(diabetes)
 
+
+def process_reductions(reduced):
+    diabetes = pd.read_csv('diabetes.csv')
+    y = diabetes['class_val']
+    x_train, x_test, y_train, y_test = train_test_split(reduced, y)
+    return x_train, x_test, y_train, y_test
 
 def test_neural_nets():
-    pass
+    print('Neural Network Training - Reduced Featuresets\n-------------------------\nPCA:')
+    pca_diabetes_nn()
+    print("ICA:")
+    ica_diabetes_nn()
+    print('Random Projection: ')
+    random_proj_diabetes_nn()
+    print('\nK-Means Derived Features:')
+    kmeans_diabetes_nn()
+    print('\nEM Derived Features:')
+    em_diabetes_nn()
 
 def pca_diabetes_nn():
-    pass
+    nn = MLPClassifier()
+    diabetes = create_dataframes()[1]
+    reduced = diabetes_pca(diabetes)
+    x_train, x_test, y_train, y_test = process_reductions(reduced)
+    nn.fit(x_train, y_train)
+    acc = nn.score(x_test, y_test)
+    print("The PCA-data-trained neural network was " + "{:.2f}".format(acc) + "% accurate.")
 
 def ica_diabetes_nn():
-    pass
+    nn = MLPClassifier()
+    diabetes = create_dataframes()[1]
+    reduced = ica_reduction(diabetes)
+    x_train, x_test, y_train, y_test = process_reductions(reduced)
+    nn.fit(x_train, y_train)
+    acc = nn.score(x_test, y_test)
+    print("The ICA-data-trained neural network was " + "{:.2f}".format(acc) + "% accurate.")
 
 def random_proj_diabetes_nn():
-    pass
+    nn = MLPClassifier()
+    diabetes = create_dataframes()[1]
+    reduced = random_proj(diabetes)
+    x_train, x_test, y_train, y_test = process_reductions(reduced)
+    nn.fit(x_train, y_train)
+    acc = nn.score(x_test, y_test)
+    print("The Random Projection data neural network was " + "{:.2f}".format(acc) + "% accurate.")
 
 def kmeans_diabetes_nn():
-    pass
+    nn = MLPClassifier()
+    diabetes = create_dataframes()[1]
+    reduced = kclusters(diabetes)
+    x_train, x_test, y_train, y_test = process_reductions(reduced)
+    nn.fit(x_train, y_train)
+    acc = nn.score(x_test, y_test)
+    print("The K-Means neural network was " + "{:.2f}".format(acc) + "% accurate.")
 
 def em_diabetes_nn():
-    pass
+    nn = MLPClassifier()
+    diabetes = create_dataframes()[1]
+    reduced = soft_cluster(diabetes)
+    x_train, x_test, y_train, y_test = process_reductions(reduced)
+    nn.fit(x_train, y_train)
+    acc = nn.score(x_test, y_test)
+    print("The soft-cluster neural network was " + "{:.2f}".format(acc) + "% accurate.")
 
 
 def main():
     init_cluster_data()
-    #reduce_dimensions()
+    reduce_dimensions()
     cluster_new_sets()
     test_neural_nets()
 
