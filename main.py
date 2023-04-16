@@ -48,101 +48,139 @@ def init_soft_clusters(dataset):
 def reduce_dimensions():
     print("Dimension Reduction\n-------------------------")
     emails, diabetes = create_dataframes()
-    print('Principal Component Analysis -\nE-Mails:')
+    print('Commencing Principal Component Analysis - \nE-mails: ')
     email_pca(emails)
     print("Diabetes: ")
     diabetes_pca(diabetes)
-    print('\nIndependent Component Analysis -\nE-Mails:') # Reference properties in paper
+    print('\nUndergoing Independent Component Analysis - \nE-mails: ') # Reference properties in paper
     ica_reduction(emails)
-    print("Diabetes: ")
+    print('Diabetes: ')
     ica_reduction(diabetes)
-    print('\nIndependent Component Analysis -\nE-Mails:')
+    print('\nRunning Gaussian Random Projection - \nE-mails: ')
     random_proj(emails)
-    print("Diabetes: ")
+    print('Diabetes: ')
     random_proj(diabetes)
+    print('Dimension Reduction Successfully Completed.')
 
 def email_pca(emails):
-    pca = PCA(n_components = 1500, svd_solver = 'randomized')
-    new_feature_set = pca.fit_transform(emails)
-    return new_feature_set
-
-def diabetes_pca(diabetes):
-    pca = PCA(n_components = 'mle')
-    new_set = pca.fit_transform(diabetes)
-    print(len(new_set[0]))   # Output new number of features calculated using MLE formula (Minka)
+    n = input('How many PCA components would you like? ')
+    pca = PCA(n_components = int(n), svd_solver = 'randomized')
+    new_set = pca.fit_transform(emails)
     return new_set
 
+def diabetes_pca(diabetes):
+    n = input('How many PCA components would you like? ')
+    pca = PCA(n_components = int(n))
+    new_set = pca.fit_transform(diabetes)
+    return new_set                                                                              
+
 def ica_reduction(dataset):
-    n = input('How many components would you like? ')
+    n = input('How many ICA components would you like? ')
     ica = FastICA(n_components = int(n)) # Check rising
     new_set = ica.fit_transform(dataset)
-    print(len(new_set[0]))
     return new_set
 
 def random_proj(dataset):
-    n = input('How many components would you like? ')
+    n = input('How many Random Projection components would you like? ')
     projector = GaussianRandomProjection(n_components = int(n))
     new_set = projector.fit_transform(dataset)
-    print(len(new_set[0]))
     return new_set
 
 
 def cluster_new_sets():
+    print('\nClustering of new feature sets\n-------------------------')
+    print('PCA-Reduced K-Means - ')
     kcluster_pca()
+    print('PCA-Reduced EM - ')
     exp_max_pca()
+    print('ICA-Reduced K-Means - ')
     kcluster_ica()
+    print('ICA-Reduced EM - ')
     exp_max_ica()
+    print('Random-Projection Reduced K-Means -')
     kcluster_rproj()
+    print('Random-Projection Reduced EM -')
     exp_max_rproj()
-
 
 def kcluster_pca():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = email_pca(emails)
-    diabetes = diabetes_pca(diabetes)
     kclusters(emails)
+    print("Diabetes: ")
+    diabetes = diabetes_pca(diabetes)
     kclusters(diabetes)
 
 def exp_max_pca():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = email_pca(emails)
-    diabetes = diabetes_pca(diabetes)
     init_soft_clusters(emails)
+    print("Diabetes: ")
+    diabetes = diabetes_pca(diabetes)
     init_soft_clusters(diabetes)
 
 def kcluster_ica():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = ica_reduction(emails)
-    diabetes = ica_reduction(diabetes)
     kclusters(emails)
+    print("Diabetes: ")
+    diabetes = ica_reduction(diabetes)
     kclusters(diabetes)
 
 def exp_max_ica():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = ica_reduction(emails)
-    diabetes = ica_reduction(diabetes)
     init_soft_clusters(emails)
+    print("Diabetes: ")
+    diabetes = ica_reduction(diabetes)
     init_soft_clusters(diabetes)
 
 def kcluster_rproj():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = random_proj(emails)
-    diabetes = random_proj(diabetes)
     kclusters(emails)
+    print("Diabetes: ")
+    diabetes = random_proj(diabetes)
     kclusters(diabetes)
 
 def exp_max_rproj():
     emails, diabetes = create_dataframes()
+    print("E-Mails: ")
     emails = random_proj(emails)
-    diabetes = random_proj(diabetes)
     init_soft_clusters(emails)
+    print("Diabetes: ")
+    diabetes = random_proj(diabetes)
     init_soft_clusters(diabetes)
 
 
+def test_neural_nets():
+    pass
+
+def pca_diabetes_nn():
+    pass
+
+def ica_diabetes_nn():
+    pass
+
+def random_proj_diabetes_nn():
+    pass
+
+def kmeans_diabetes_nn():
+    pass
+
+def em_diabetes_nn():
+    pass
+
 
 def main():
-    #init_cluster_data()
-    reduce_dimensions()
+    init_cluster_data()
+    #reduce_dimensions()
+    cluster_new_sets()
+    test_neural_nets()
 
 main()
 
